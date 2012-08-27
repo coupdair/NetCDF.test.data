@@ -1,0 +1,48 @@
+#NetCDF example#
+#dim,var/attr,data
+ncdump -h example.nc #dim,var
+ncdump example.nc #data
+ncdump -h example_attribute.nc #var/attribute
+
+#nco: attribute editor
+cp -p example.nc example_attribute.nc
+ncdump -h example_attribute.nc #var: no attribute
+ncatted -a long_name,vel_x1,o,c,"velocity along X direction (i.e. x1)" example_attribute.nc
+ncatted -a units,vel_x1,o,c,"m/s" example_attribute.nc
+ncdump -h example_attribute.nc #var/attribute
+
+#SPIV map example#
+#information
+ncdump -h FP05TST16YZBLK0000-0099.nc
+
+#map
+ncview FP05TST16YZBLK0000-0099.nc
+
+#profile
+ncwa -a dim_x1,dim_time FP05TST16YZBLK0000-0099.nc FP05TST16YZBLK0000-0099_profile.nc
+ncview FP05TST16YZBLK0000-0099_profile.nc
+
+#convergence (crop,average,gather)
+list=
+#for((i=99;i<1600;i+=300))
+for((i=9;i<100;i+=10))
+do
+  zerosi=`printf %04d $i`
+  ft=FP05TST16YZsample0000-$zerosi.nc
+#  fo=FP05TST16YZsample0000-$zerosi'_profile.nc'
+  fo=FP05TST16YZsample0000-$zerosi'_mean.nc'
+  ##crop
+  ncks -O -d dim_time,0,$i FP05TST16YZBLK0000-0099.nc $ft
+  ##profile
+#  ncwa -O -a dim_x1,dim_time $ft $fo
+  ncwa -O -a dim_time $ft $fo
+  list=$list' '$fo
+  rm $ft
+done
+##gather
+ncecat -O $list FP05TST16YZsample_convergence.nc
+##rename dimension (record to convergence)
+ncrename -d record,convergence FP05TST16YZsample_convergence.nc
+
+ncview FP05TST16YZsample_convergence.nc
+
